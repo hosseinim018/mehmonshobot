@@ -1,0 +1,14 @@
+Django
+cryptography
+jdatetime
+pillow
+openpyxl
+pandas
+PySocks
+requests
+celery
+django_celery_beat
+redis
+daphne
+channels
+
