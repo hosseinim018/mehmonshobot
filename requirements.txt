@@ -11,4 +11,4 @@ django_celery_beat
 redis
 daphne
 channels
-
+psycopg2
