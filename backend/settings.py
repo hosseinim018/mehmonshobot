@@ -167,10 +167,9 @@ MEDIA_URL = "/media/"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': False,  # Keep existing loggers
+    'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
             'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
@@ -179,23 +178,26 @@ LOGGING = {
     },
     'handlers': {
         'file': {
-            'level': 'DEBUG',  # Adjust log level as needed (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+            'level': 'DEBUG',
             'class': 'logging.FileHandler',
             'filename': 'django.log',
             'formatter': 'verbose',
         },
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'verbose',  # Added formatter to console handler
+            'level': 'INFO',  # Adjusting console handler level to INFO
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file'],  # Send logs to both console and file
-            'level': 'DEBUG',  # Adjust log level as needed
-            'propagate': True,  # Allow logging to propagate to parent loggers
+            'handlers': ['console', 'file'],
+            'level': 'INFO',  # Adjusting logger level to INFO
+            'propagate': True,
         },
     },
 }
+
 
 
 
