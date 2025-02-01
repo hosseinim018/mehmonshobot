@@ -82,7 +82,11 @@ class Admins(models.Model):
 class Setting(models.Model):
     # payment
     card_name = models.CharField(max_length=100)
-    card_number = models.PositiveIntegerField()
+    card_number = models.PositiveBigIntegerField(blank=True, null=True)
+    price = models.PositiveIntegerField(blank=True, null=True)
+    payment_method = models.CharField(max_length=20, choices=(('card-to-card', 'card-to-card'), ('payment-gateway', 'payment-gateway')), default='card-to-card')
+
+    # lottery
     price = models.PositiveIntegerField(blank=True, null=True)
     payment_method = models.CharField(max_length=20, choices=(('card-to-card', 'card-to-card'), ('payment-gateway', 'payment-gateway')), default='card-to-card')
     # lottery date

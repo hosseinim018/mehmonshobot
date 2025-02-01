@@ -97,20 +97,27 @@ def PaymentsView(request):
 def SettingsView(request):
     return render(request, 'Settings.html')
 
-
-def Signupiew(request):
+def register(request):
+    username = request.GET.get('username')
+    password1 = request.GET.get('password1')
+    password2 = request.GET.get('password2')
+    email = request.GET.get('email')
+    print(username, password1, password2, email)
     if request.method == 'POST':
-        form = SignUpForm(request.POST)
+        # form = SignUpForm({'username': username, 'password1': password1, 'password2': password2, 'email': email})
+        form = SignUpForm(request.GET)
         if form.is_valid():
             form.save()
             username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password1')
-            user = authenticate(username=username, password=password)
+            raw_password = form.cleaned_data.get('password1')
+            user = authenticate(username=username, password=raw_password, email=email)
             login(request, user)
-            return redirect('Login')
-    else:
-        form = SignUpForm()
-    return render(request, 'Signup.html', {'form': form})
+            request.session['user_id'] = user.id
+            return JsonResponse(generate_response(message='register_successful'))
+        else:
+            return JsonResponse(generate_response(message='register_errors', data=form.errors.as_json()))
+
+    return JsonResponse(generate_response(message='register_errors'))
 
 
 @csrf_exempt
@@ -158,9 +165,7 @@ def serialize_form(form):
 
 @csrf_exempt
 def password_reset_view(request):
-
     username = request.GET.get('username')
-    print(username)
     if username:
         try:
             user = User.objects.filter(username=username).first()
@@ -195,32 +200,12 @@ def password_reset_view(request):
     return JsonResponse(generate_response(message='Username not found', status_code=404))
 
 
-
-
 def password_reset_confirm_view(request):
     user = User.objects.get(id=1)
     form = SetPasswordForm(user)
     return render(request, 'password_reset_confirm.html', {'form': form})
 
 
-
-# def password_reset_view(request):
-#     if request.method == 'POST':
-#         form = PasswordResetForm(request.POST)
-#         if form.is_valid():
-#             data = form.cleaned_data['email']
-#             user = User.objects.filter(email=data).first()
-#             print(user)
-#             if user:
-#                 token = default_token_generator.make_token(user)
-#                 uid = urlsafe_base64_encode(force_bytes(user.pk))
-#                 reset_link = f"{request.build_absolute_uri('/reset/')}?uid={uid}&token={token}"
-#                 print('reset link is:')
-#                 print(reset_link)
-#                 return render(request, 'password_reset_done.html', {'reset_link': reset_link})
-#     else:
-#         form = PasswordResetForm()
-#     return render(request, 'password_reset_form.html', {'form': form})
 
 def LotteryView(request):
     return render(request, 'Lottery.html')
@@ -1110,18 +1095,11 @@ def getPaymentsDate(request):
 
 @csrf_exempt
 def totalUnReadMessagesAndNewPayment(request):
-    try:
-        setting = Setting.objects.get(id=1)
-        data = {
-            'total_unread_messages': setting.total_unread_messages,
-            'total_new_payments': setting.total_payments,
-        }
-    except Setting.DoesNotExist:
-        data = {
-            'total_unread_messages': 0,
-            'total_new_payments': 0,
-        }
-
+    setting = Setting.objects.get(id=1)
+    data = {
+        'total_unread_messages': setting.total_unread_messages,
+        'total_new_payments': setting.total_payments,
+    }
     return JsonResponse(generate_response(message='successful', data=data))
 
 def unReadMessages(request):

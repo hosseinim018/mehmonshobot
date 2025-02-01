@@ -37,7 +37,7 @@ urlpatterns = [
 
     path('Lottery/', LotteryView, name='Lottery'),
     path('Info/', InfoView, name='Info'),
-    path('Signup/', Signupiew, name='Signup'),
+    path('register/', register, name='register'),
     path('Login/', LoginView, name='Login'),
     path('Logout/', LogoutView, name='Logout'),
 

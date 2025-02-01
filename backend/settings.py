@@ -112,14 +112,24 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 #     }
 # }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'mainvvr_db',
+#         'USER': 'postgres',
+#         'PASSWORD': 'uWC5nkxDcdJHSmG5f8cz',
+#         'HOST': 'main-pdv-service',
+#         'PORT': '5432',
+#     }
+# }
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'mainvvr_db',
         'USER': 'postgres',
         'PASSWORD': 'uWC5nkxDcdJHSmG5f8cz',
-        'HOST': 'main-pdv-service',
-        'PORT': '5432',
+        'HOST': 'remote.runflare.com',
+        'PORT': '31651',
     }
 }
 # Password validation
