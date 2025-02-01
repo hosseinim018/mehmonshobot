@@ -1110,11 +1110,18 @@ def getPaymentsDate(request):
 
 @csrf_exempt
 def totalUnReadMessagesAndNewPayment(request):
-    setting = Setting.objects.get(id=1)
-    data = {
-        'total_unread_messages': setting.total_unread_messages,
-        'total_new_payments': setting.total_payments,
-    }
+    try:
+        setting = Setting.objects.get(id=1)
+        data = {
+            'total_unread_messages': setting.total_unread_messages,
+            'total_new_payments': setting.total_payments,
+        }
+    except Setting.DoesNotExist:
+        data = {
+            'total_unread_messages': 0,
+            'total_new_payments': 0,
+        }
+
     return JsonResponse(generate_response(message='successful', data=data))
 
 def unReadMessages(request):
