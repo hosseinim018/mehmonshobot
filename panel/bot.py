@@ -16,8 +16,7 @@ from django.db import IntegrityError
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import json
-
-
+from django.db import IntegrityError
 
 conf = configs(appname='panel')
 bot = Monogram(**conf)
@@ -94,7 +93,7 @@ def start(message):
         # print(filename)
     try:
         user_info = Profile.objects.get(user_id=message.chat.id)
-        # print('Profile Existed!')
+        print('Profile Existed!')
         # invite link:
         callback_data = message.text.split()
         print(callback_data)
@@ -117,6 +116,7 @@ def start(message):
                 message.answer(text)
 
     except Profile.DoesNotExist:
+        print('No Profile')
         first_name = message.chat.first_name
         last_name = message.chat.last_name
         first_name = first_name if first_name else ''
@@ -126,32 +126,48 @@ def start(message):
         username = message.chat.username
         user_id = message.chat.id
         status = 'Registering'
-        user_info = Profile.objects.create(full_name=full_name, username=username, user_id=user_id, picture=filename, status=status)
+        print(full_name, username, user_id, filename, status)
+        try:
+            user_info = Profile.objects.create(
+                full_name=full_name,
+                username=username,
+                user_id=user_id,
+                picture=filename,
+                status=status
+            )
 
-        welcome_message = f"""سلام رفیق گل! ‍♀️‍♂️به {Bold('ربات مهمونشو')} خوش اومدی! اینجا یه جای باحالِ پر از آدمای باحالِ خوش‌گذرانِ دوست‌داشتنیه! هر هفته یه {Bold('قرعه‌کشی خفن')} داریم که برنده‌ها باید با جایزه‌شون دوستاشون رو مهمون کنن! فقط کافیه عضو شی تا تو هم تو این جمع باحال باشی! {Bold('منتظرتیم!')}"""
-        message.answer(welcome_message)
-        # print('Profile Does Not Exist!')
-        if user_info.enter_name == None:
-            c = Conversation(user_id=message.chat.id)
-            c.create(callback_data='enter_name')
-            msg = message.text.split()
-            if len(msg) > 1:
-                friends_id = msg[1]
-                c.create(callback_data=f'enter_name-{friends_id}')
-            else:
+            print(user_info)
+            welcome_message = f"""سلام رفیق گل! ‍♀️‍♂️به {Bold('ربات مهمونشو')} خوش اومدی! اینجا یه جای باحالِ پر از آدمای باحالِ خوش‌گذرانِ دوست‌داشتنیه! هر هفته یه {Bold('قرعه‌کشی خفن')} داریم که برنده‌ها باید با جایزه‌شون دوستاشون رو مهمون کنن! فقط کافیه عضو شی تا تو هم تو این جمع باحال باشی! {Bold('منتظرتیم!')}"""
+            message.answer(welcome_message)
+            # print('Profile Does Not Exist!')
+            if user_info.enter_name == None:
+                c = Conversation(user_id=message.chat.id)
                 c.create(callback_data='enter_name')
-            text = '👤 نام و نام خانوادگی خود را به حروف فارسی وارد کنید, توجه داشته باشید که این نام باید مطابق با نام و نام خانوادگی درج شده روی کارت بانکی شما باشد:'
-            message.answer(text)
-        if user_info.enter_name != None and user_info.enter_id == None:
-            c = Conversation(user_id=message.chat.id)
-            msg = message.text.split()
-            if len(msg) > 1:
-                friends_id = msg[1]
-                c.create(callback_data=f'enter_id-{friends_id}')
-            else:
-                c.create(callback_data='enter_id')
-            text = '🔹 لطفا یک نام کاربری به حروف انگلیسی برای خودتان انتخاب و ارسال کنید:'
-            message.answer(text)
+                msg = message.text.split()
+                if len(msg) > 1:
+                    friends_id = msg[1]
+                    c.create(callback_data=f'enter_name-{friends_id}')
+                else:
+                    c.create(callback_data='enter_name')
+                text = '👤 نام و نام خانوادگی خود را به حروف فارسی وارد کنید, توجه داشته باشید که این نام باید مطابق با نام و نام خانوادگی درج شده روی کارت بانکی شما باشد:'
+                message.answer(text)
+            if user_info.enter_name != None and user_info.enter_id == None:
+                c = Conversation(user_id=message.chat.id)
+                msg = message.text.split()
+                if len(msg) > 1:
+                    friends_id = msg[1]
+                    c.create(callback_data=f'enter_id-{friends_id}')
+                else:
+                    c.create(callback_data='enter_id')
+                text = '🔹 لطفا یک نام کاربری به حروف انگلیسی برای خودتان انتخاب و ارسال کنید:'
+                message.answer(text)
+
+        except IntegrityError as e:
+            # Handle the integrity error, such as unique constraint violation
+            print(f"An integrity error occurred: {e}")
+        except Exception as e:
+            # Handle any other exceptions
+            print(f"An error occurred while creating the profile: {e}")
 
 
 @bot.newMessage(pattern='📢 مشاهده کانال')
@@ -980,7 +996,7 @@ def any(message):
             except Profile.DoesNotExist:
                 pass
 
-    print(message.text, message.text == '/webapp')
+    # print(message.text, message.text == '/webapp')
     if message.text == '/webapp':
         text = 'we are testing webapp...'
         message.answer(text)

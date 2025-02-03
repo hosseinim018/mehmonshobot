@@ -14,7 +14,7 @@ class Profile(models.Model):
   full_name = models.CharField(max_length=255, blank=True, null=True)
   username = models.CharField(max_length=255, blank=True, null=True)
   picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
-  user_id = models.IntegerField()
+  user_id = models.BigIntegerField()
   friends = models.ManyToManyField('self', through='profileFriend', blank=True)
   # login_code = models.CharField(max_length=255, blank=True, null=True)  # Can be blank if not used
   # referral_code = models.CharField(max_length=255, blank=True, null=True, default=generate_uid())  # Can be blank if not used
@@ -75,7 +75,7 @@ class Messages(models.Model):
 
 class Admins(models.Model):
     name = models.CharField(max_length=255, blank=True)
-    user_id = models.IntegerField()
+    user_id = models.BigIntegerField()
     # login_code = models.CharField(max_length=255, blank=True, null=True, default=generate_uid())  # Can be blank if not used
 
 

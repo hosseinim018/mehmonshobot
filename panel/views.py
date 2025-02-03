@@ -102,7 +102,7 @@ def register(request):
     password1 = request.GET.get('password1')
     password2 = request.GET.get('password2')
     email = request.GET.get('email')
-    print(username, password1, password2, email)
+    # print(username, password1, password2, email)
     if request.method == 'POST':
         # form = SignUpForm({'username': username, 'password1': password1, 'password2': password2, 'email': email})
         form = SignUpForm(request.GET)
