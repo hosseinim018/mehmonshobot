@@ -215,7 +215,7 @@ LOGGING = {
 ASGI_APPLICATION = "backend.asgi.application"
 
 # Celery settings
-REDIS_BASE_URL = "redis://default:ud6PEzgZPn9Yf7NdxAss@myredis-ffe-service:6379/0"
+REDIS_BASE_URL = "redis://default:ud6PEzgZPn9Yf7NdxAss@myredis-ffe-service:6379"
 # REDIS_BASE_URL = "redis://127.0.0.1:6379"
 CELERY_BROKER_URL = f"{REDIS_BASE_URL}/0"
 CELERY_RESULT_BACKEND = f"{REDIS_BASE_URL}/0"
