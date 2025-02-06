@@ -242,3 +242,8 @@ CHANNEL_LAYERS = {
 #     },
 # }
 
+
+SANDBOX = True
+MERCHANT = 'e6a82528-4314-411a-bbc5-a6b63a2ba105'
+PAYMENT_CALLBACK_URL = f'https://{ALLOWED_HOSTS[0]}/paymentMessage/'
+

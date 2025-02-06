@@ -18,6 +18,12 @@ from asgiref.sync import async_to_sync
 import json
 from django.db import IntegrityError
 
+import requests
+from django.conf import settings as djagno_settings
+
+
+session = requests.Session()
+
 conf = configs(appname='panel')
 bot = Monogram(**conf)
 
@@ -702,6 +708,8 @@ def callback_query(query):
         card_name = Bold(setting.card_name)
         payment_price = Bold(setting.price)
         payment_method = setting.payment_method
+        # merchant_id = setting.merchant_id
+        merchant_id = djagno_settings.MERCHANT
         if payment_method == 'card-to-card':
             # text = "برای واریز مبلغ مورد نظر، لطفا به شماره کارت {card_number} به نام {card_name} وجه {payment_price} تومان را انتقال دهید.\nسپس با فشردن دکمه زیر عکس فیش واریزی خود را ارسال کنید."
             text = f"لطفا مبلغ {payment_price} تومان را به شماره کارت زیر واریز نمایید و با فشردن دکمه زیر عکس فیش واریزی خود را ارسال کنید."
@@ -718,11 +726,69 @@ def callback_query(query):
             keyboard = InlineKeyboardMarkup(keyboard)
             editMessageText(text=text, reply_markup=keyboard, chat_id=chat_id, message_id=message_id)
         else:
-            url = 'https://t.me/'
-            keyboard = [[InlineKeyboardButton("🔗 درگاه پرداخت", url)]]
-            keyboard = InlineKeyboardMarkup(keyboard)
-            text = f"لطفا مبلغ {payment_price} تومان را با فشردن دکمه زیر از طریق درگاه پرداخت واریز نمایید."
-            editMessageText(text=text, reply_markup=keyboard, chat_id=chat_id, message_id=message_id)
+            print('gateway')
+            # create new payment
+            payment = Payment.objects.create(
+                amount=setting.price,
+                payment_method='gateway',
+                lottery_id=lottery_id
+            )
+            payment_id = payment.id
+            description = "توضیحات مربوط به تراکنش را در این قسمت وارد کنید"
+            PAYMENT_CALLBACK_URL = djagno_settings.PAYMENT_CALLBACK_URL
+
+            data = {
+                "merchant_id": merchant_id,
+                "amount": str(setting.price),
+                "currency": "IRT",
+                "description": description,
+                "callback_url": PAYMENT_CALLBACK_URL,
+                "metadata": {
+                    'order_id': str(payment.id),
+                }
+            }
+            data = json.dumps(data)
+            # ? sandbox merchant
+            if djagno_settings.SANDBOX:
+                sandbox = 'sandbox'
+            else:
+                sandbox = 'payment'
+
+            ZP_API_REQUEST = f"https://{sandbox}.zarinpal.com/pg/v4/payment/request.json"
+            ZP_API_STARTPAY = f"https://{sandbox}.zarinpal.com/pg/StartPay/"
+
+            # set content length by data
+            headers = {'content-type': 'application/json', 'content-length': str(len(data))}
+            try:
+                # print(ZP_API_REQUEST)
+                response = session.post(ZP_API_REQUEST, data=data, headers=headers, timeout=100)
+                # print(response.json())
+                if response.status_code == 200:
+                    response = response.json()['data']
+                    print(response)
+                    if response['code'] == 100:
+                        payment = Payment.objects.get(id=payment_id)
+                        payment.authority = response['authority']
+                        payment.save()
+                        url = ZP_API_STARTPAY + str(response['authority'])
+                        keyboard = [[InlineKeyboardButton("🔗 درگاه پرداخت", url)]]
+                        keyboard = InlineKeyboardMarkup(keyboard)
+                        text = f"لطفا مبلغ {payment_price} تومان را با فشردن دکمه زیر از طریق درگاه پرداخت واریز نمایید."
+                        editMessageText(text=text, reply_markup=keyboard, chat_id=chat_id, message_id=message_id)
+
+                    else:
+                        text = f"خطا در ارسال درخواست. کد خطا {str(response['code'])}"
+                        query.message.answer(text)
+                else:
+                    text = "خطا در اتصال لطفا دقایقی دیگر دوباره امتحان کنید!"
+                    query.message.answer(text)
+            except requests.exceptions.Timeout:
+                text = f"زمان پرداخت شما به پایان رسید. کد خطا {str(response['code'])}"
+                query.message.answer(text)
+
+            except requests.exceptions.ConnectionError:
+                text = "خطا در اتصال لطفا دوباره امتحان کنید!"
+                query.message.answer(text)
 
     if 'paid' in query.data:
         data = query.data.split('-')

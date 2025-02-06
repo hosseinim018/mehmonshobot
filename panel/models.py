@@ -84,11 +84,8 @@ class Setting(models.Model):
     card_name = models.CharField(max_length=100)
     card_number = models.PositiveBigIntegerField(blank=True, null=True)
     price = models.PositiveIntegerField(blank=True, null=True)
-    payment_method = models.CharField(max_length=20, choices=(('card-to-card', 'card-to-card'), ('payment-gateway', 'payment-gateway')), default='card-to-card')
+    payment_method = models.CharField(max_length=20, choices=(('card-to-card', 'card-to-card'), ('gateway', 'gateway')), default='card-to-card')
 
-    # lottery
-    price = models.PositiveIntegerField(blank=True, null=True)
-    payment_method = models.CharField(max_length=20, choices=(('card-to-card', 'card-to-card'), ('payment-gateway', 'payment-gateway')), default='card-to-card')
     # lottery date
     start_time = models.DateTimeField(blank=True, null=True)
     end_time = models.DateTimeField(blank=True, null=True)
@@ -101,14 +98,14 @@ class Setting(models.Model):
     total_payments = models.PositiveIntegerField(blank=True, null=True, default=0)
 
 
-  
 class Payment(models.Model):
     # Payment status choices
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('success', 'Success'),
-        ('failed', 'Failed'),
-        ('refunded', 'Refunded'),
+        ('VERIFIED', 'VERIFIED'),
+        ('PAID', 'PAID'),
+        ('IN_BANK', 'IN_BANK'),
+        ('FAILED', 'FAILED'),
+        ('REVERSED', 'REVERSED'),
     ]
 
     # Payment method choices
@@ -121,29 +118,21 @@ class Payment(models.Model):
     lottery = models.ForeignKey(Lottery, on_delete=models.CASCADE, related_name='lottery_payment')
 
     # Common fields for all payment types
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    amount = models.PositiveIntegerField(blank=True, null=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='VERIFIED')
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
-    created_at = models.DateTimeField(default=timezone.now)
+    authority = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(default=timezone.now, blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     # Fields specific to card-to-card transfers
-    sender_card_number = models.CharField(max_length=16, blank=True, null=True)  # Encrypt in production
-    receiver_card_number = models.CharField(max_length=16, blank=True, null=True)  # Encrypt in production
-    sender_name = models.CharField(max_length=255, blank=True, null=True)
-    receiver_name = models.CharField(max_length=255, blank=True, null=True)
-
-    # Fields specific to payment gateway payments
-    gateway_transaction_id = models.CharField(max_length=255, blank=True, null=True)  # Transaction ID from the gateway
-    gateway_name = models.CharField(max_length=100, blank=True, null=True)  # e.g., Stripe, PayPal
-    gateway_response = models.JSONField(blank=True, null=True)  # Store gateway response for debugging
-
-    # Optional metadata
-    description = models.TextField(blank=True, null=True)
-    metadata = models.JSONField(blank=True, null=True)  # Additional data if needed
+    # sender_card_number = models.CharField(max_length=16, blank=True, null=True)  # Encrypt in production
+    # receiver_card_number = models.CharField(max_length=16, blank=True, null=True)  # Encrypt in production
+    # sender_name = models.CharField(max_length=255, blank=True, null=True)
+    # receiver_name = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
-        return f"Payment {self.id} - {self.amount} {self.currency} ({self.status})"
+        return f"Payment {self.id} - {self.amount} ({self.status})"
 
     class Meta:
         ordering = ['-created_at']

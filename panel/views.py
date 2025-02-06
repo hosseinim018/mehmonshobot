@@ -1170,3 +1170,165 @@ def getLotteryHistory(request):
             d['winners'].append(l)
         data.append(d)
     return JsonResponse(generate_response(data=data))
+
+
+from django.conf import settings
+import requests
+# ? sandbox merchant
+if settings.SANDBOX:
+    sandbox = 'sandbox'
+else:
+    sandbox = 'payment'
+ZP_API_reverse = f"https://{sandbox}.zarinpal.com/pg/v4/payment/reverse.json"
+ZP_API_inquiry = f"https://{sandbox}.zarinpal.com/pg/v4/payment/inquiry.json"
+
+session = requests.Session()
+
+def Inquiry(request):
+    if request.method == 'POST':
+        authority = request.GET.get('authority')
+        data = {
+            "merchant_id": settings.MERCHANT,
+            "authority": authority,
+        }
+        data = json.dumps(data)
+        # set content length by data
+        headers = {'content-type': 'application/json', 'content-length': str(len(data))}
+        response = session.post(ZP_API_inquiry, data=data, headers=headers)
+        print(response.json())
+        if response.status_code == 200:
+            response = response.json()
+            data = response['data']
+            if data['code'] == 100:
+                status = data['status']
+                try:
+                    obj = Payment.objects.filter(authority=authority).last()
+                    obj.status = status
+                    print(obj)
+                    obj.save()
+                    if status == 'FAILED':
+                        lottery = obj.lottery
+                        lottery.payment_status = "Registering"
+                        lottery.status = "Failed"
+                        lottery.save()
+                        user_id = lottery.profile.user_id
+                        text = 'تراکنش شما ناموفق بود وضعیت شرکت در قرعه کشی شما به حالت در انتظار پرداخت در امد.'
+                        sendMessage(chat_id=user_id, text=text)
+                    return JsonResponse(generate_response(message='Transaction success.', data=status, error=False))
+                except Payment.DoesNotExist:
+                    return JsonResponse(generate_response(message='Transaction failed .', data=status, error=True))
+            else:
+                return JsonResponse(generate_response(message='Transaction failed .', data='status', error=True))
+
+        return JsonResponse(generate_response(message='error', data=response.json(), error=True))
+
+def Reverse(request):
+    if request.method == 'POST':
+        authority = request.GET.get('authority')
+        data = {
+            "merchant_id": settings.MERCHANT,
+            "authority": authority,
+        }
+        data = json.dumps(data)
+        # set content length by data
+        headers = {'content-type': 'application/json', 'content-length': str(len(data))}
+        response = session.post(ZP_API_reverse, data=data, headers=headers)
+        print(response.json())
+        # if response.status_code == 200:
+        #     response = response.json()
+        #     data = response['data']
+        #     if data['code'] == 100:
+        #         status = data['status']
+        #         try:
+        #             obj = Payment.objects.filter(authority=authority).last()
+        #             obj.status = status
+        #             print(obj)
+        #             obj.save()
+        #             if status == 'FAILED':
+        #                 lottery = payment.lottery
+        #                 lottery.payment_status = "Registering"
+        #                 lottery.status = "Failed"
+        #                 lottery.save()
+        #                 user_id = lottery.profile.user_id
+        #                 text = 'تراکنش شما ناموفق بود وضعیت شرکت در قرعه کشی شما به حالت در انتظار پرداخت در امد.'
+        #                 sendMessage(chat_id=user_id, text=text)
+        #             return JsonResponse(generate_response(message='Transaction success.', data=status, error=False))
+        #         except Payment.DoesNotExist:
+        #             return JsonResponse(generate_response(message='Transaction failed .', data=status, error=True))
+        #     else:
+        #         return JsonResponse(generate_response(message='Transaction failed .', data=status, error=True))
+
+        return JsonResponse(generate_response(message='error', data=response.json(), error=True))
+
+
+@csrf_exempt
+def paymentMessage(request):
+    if request.method == 'GET':
+        return render(request, 'paymentMessage.html')
+    else:
+        if request.GET.get('Status') == 'OK':
+            authority = request.GET.get('Authority')
+            data = {
+                "merchant_id": settings.MERCHANT,
+                "authority": authority,
+            }
+            data = json.dumps(data)
+            # set content length by data
+            headers = {'content-type': 'application/json', 'content-length': str(len(data))}
+            response = session.post(ZP_API_inquiry, data=data, headers=headers)
+
+            if response.status_code == 200:
+                response = response.json()
+                data = response['data']
+                if data['code'] == 100:
+                    status = data['status']
+                    try:
+                        obj = Payment.objects.filter(authority=authority).last()
+                        obj.status = status
+                        print(obj)
+                        obj.save()
+                        lottery = obj.lottery
+                        user_id = lottery.profile.user_id
+                        friendList = []
+                        friends = lottery.friends.all()
+                        for friend in friends:
+                            friendList.append(friend.enter_name)
+                        text = '✅ در خواست شما با موفقیت تایید شد.\nاطلاعات بلیط شما:'
+                        game = f' فعالیت انتخاب شده: {lottery.game.name}'
+                        friendList = INIsection("دوستان", friendList)
+                        text = text + '\n' + game + '\n' + friendList
+                        name = lottery.profile.enter_name
+                        date = lottery.register_date
+                        ticket = lottery.ticket
+                        path_file = generate_ticket(name, date, ticket)
+                        sendPhoto(chat_id=user_id, photo=InputFile(path_file), caption=text)
+                        lottery.payment_status = "PAID"
+                        lottery.status = "Registered"
+                        lottery.ticket_picture = path_file[len("media/"):]
+                        lottery.save()
+                        return JsonResponse(generate_response(message='Transaction success.', data=response, error=False))
+                    except Payment.DoesNotExist:
+                        return JsonResponse(generate_response(message='Transaction failed .', data=response, error=True))
+                else:
+                    return JsonResponse(generate_response(message='Transaction failed .', data=response, error=True))
+
+            return JsonResponse(generate_response(message='error', data=response.json(), error=True))
+
+        else:
+            return JsonResponse(generate_response(message='Transaction failed or canceled by user', error=True))
+
+def getPayments(request):
+    payments = Payment.objects.filter(payment_method='gateway')
+    data =[]
+    for payment in payments:
+        lottery = payment.lottery
+        d = {
+            'created_at':convert_date(payment.created_at),
+            'status':payment.status,
+            'authority':payment.authority,
+            'register_date':convert_date(lottery.register_date),
+            'updated_at':convert_date(payment.updated_at),
+        }
+        data.append(d)
+    return JsonResponse(generate_response(message='successful', data=data))
+
