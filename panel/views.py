@@ -299,6 +299,25 @@ def loadProfileFriends(request):
         return JsonResponse(generate_response(error='Profile not found', status_code=404))
 
 def loadMessagesyHistoryOfProfile(request):
+
+    setting = Setting.objects.get(id=1)
+    setting.total_unread_messages = 0
+    setting.save()
+
+    # Broadcast the message to all connected clients
+    data = {
+        'total_unread_messages': setting.total_unread_messages,
+        'total_new_payments': setting.total_payments,
+    }
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)('unread', {
+        'type': 'chat_message',
+        'message': json.dumps({
+            'data': data,
+        }),
+    })
+    print(data)
+
     # Access ID from POST data
     profile_id = request.GET.get('id')
     try:
@@ -352,23 +371,6 @@ def loadMessagesyHistory(request):
     return JsonResponse(generate_response(message='successful', data=message_data))
 
 def loadMessagesContents(request):
-
-    setting = Setting.objects.get(id=1)
-    setting.total_unread_messages = 0
-    setting.save()
-
-    # Broadcast the message to all connected clients
-    data = {
-        'total_unread_messages': setting.total_unread_messages,
-        'total_new_payments': setting.total_payments,
-    }
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)('unread', {
-        'type': 'chat_message',
-        'message': json.dumps({
-            'data': data,
-        }),
-    })
 
     senders = Messages.objects.values_list('sender__pk', flat=True).distinct()
     sender_data = []
