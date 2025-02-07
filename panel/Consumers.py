@@ -88,4 +88,19 @@ class MessagesSocet(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard('Messages', self.channel_name)
 
+class TotalUnReadMessage(AsyncWebsocketConsumer):
+    async def connect(self):
+        await self.accept()
+        await self.channel_layer.group_add('unreadmessage', self.channel_name)
+
+    async def chat_message(self, event):
+        # Extract the message from the event
+        message = event['message']
+
+        # Send the message back to the client
+        await self.send(text_data=json.dumps({'message': message}))
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard('unread', self.channel_name)
+
 

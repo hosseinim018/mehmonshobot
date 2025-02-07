@@ -823,9 +823,46 @@ def any(message):
     conv = Conversation(message.chat.id)
     data = conv.data()
     print('conversations:', data)
-    # print('callback_data is: ', data['callback_data'])
 
     if data and (filter_message(message)==False):
+        print('callback_data is: ', data['callback_data'])
+        if data['callback_data'] == 'paid':
+            try:
+                profile = Profile.objects.get(user_id=message.chat.id)
+                # if message.photo != None:
+                #     lottery = Lottery.objects.filter(profile=profile).last()
+                #     file_id = message.photo[-1].file_id
+                #     f = getFile(file_id)
+                #     file_path = f['result']['file_path']
+                #     filename = get_filename_with_date(message.chat.id, '.jpg')
+                #     pic = bot.download_file(filename=filename, dir_path='media/img/uploads', file_path=file_path)
+                #     filename = 'img/uploads/' + filename
+                #     lottery.payment_picture = filename
+                #     lottery.save()
+                #     text = 'فیش شما با موفقیت ارسال شد منتظر تایید ادمین باشید.'
+                #     message.answer(text)
+                #     conv.cancel()
+                #
+                #     setting = Setting.objects.get(id=1)
+                #     if setting.total_payments is not None:
+                #         setting.total_payments += 1
+                #     else:
+                #         setting.total_payments = 0
+                #     # Broadcast the message to all connected clients
+                #     data = {
+                #         'total_unread_messages': setting.total_unread_messages,
+                #         'total_new_payments': setting.total_payments,
+                #     }
+                #     channel_layer = get_channel_layer()
+                #     async_to_sync(channel_layer.group_send)('unread', {
+                #         'type': 'chat_message',
+                #         'message': json.dumps({
+                #             'data': data,
+                #         }),
+                #     })
+
+            except Profile.DoesNotExist:
+                pass
         if 'enter_name' in data['callback_data']:
             if is_persian_name(message.text):
                 try:
@@ -978,12 +1015,19 @@ def any(message):
                     message.answer(text)
                     conv.cancel()
 
+                    if profile.unread_message_number is not None:
+                        profile.unread_message_number += 1
+                        profile.save()
+                    else:
+                        profile.unread_message_number = 1
+                        profile.save()
                     setting = Setting.objects.get(id=1)
                     if setting.total_unread_messages is not None:
                         setting.total_unread_messages += 1
                     else:
                         setting.total_unread_messages = 0
                     setting.save()
+
                     # Broadcast the message to all connected clients
                     data = {
                         'total_unread_messages': setting.total_unread_messages,
@@ -1014,53 +1058,37 @@ def any(message):
                         'datetime': shamsi_date.strftime('%H:%M %Y/%m/%d'),
                         'status': messageObj.status,
                     }
-                    async_to_sync(channel_layer.group_send)('supportMessages', {
-                        'type': 'chat_message',
-                        'message': json.dumps(message_data),
-                    })
 
+                    contact_data = {
+                        'id': profile.id,
+                        'enter_name': profile.enter_name,
+                        'enter_id': profile.enter_id,
+                        'user_id': profile.user_id,
+                        'profile_id': profile.id,
+                        'profile_picture': profile.picture.url if profile.picture else None,
+                        'total_unread_messages': profile.unread_message_number,
+                        'last_message': message_text,
+                    }
+                    # Broadcast the message to all connected clients
+                    data = {
+                        'total_unread_messages': setting.total_unread_messages,
+                        'unread_message_number': profile.unread_message_number,
+                        'profile_id': profile.id,
+                        'message_data': message_data,
+                        'contact_data': contact_data,
+                    }
+                    async_to_sync(channel_layer.group_send)('unreadmessage', {
+                        'type': 'chat_message',
+                        'message': json.dumps({
+                            'data': data,
+                        }),
+                    })
                 except Profile.DoesNotExist:
                     pass
             else:
                 text = 'خطا! پیام ارسالی شما باید متن یا عکس کپشن دار باشد.'
                 message.answer(text)
-        if data['callback_data'] == 'paid':
-            try:
-                profile = Profile.objects.get(user_id=message.chat.id)
-                # if message.photo != None:
-                #     lottery = Lottery.objects.filter(profile=profile).last()
-                #     file_id = message.photo[-1].file_id
-                #     f = getFile(file_id)
-                #     file_path = f['result']['file_path']
-                #     filename = get_filename_with_date(message.chat.id, '.jpg')
-                #     pic = bot.download_file(filename=filename, dir_path='media/img/uploads', file_path=file_path)
-                #     filename = 'img/uploads/' + filename
-                #     lottery.payment_picture = filename
-                #     lottery.save()
-                #     text = 'فیش شما با موفقیت ارسال شد منتظر تایید ادمین باشید.'
-                #     message.answer(text)
-                #     conv.cancel()
-                #
-                #     setting = Setting.objects.get(id=1)
-                #     if setting.total_payments is not None:
-                #         setting.total_payments += 1
-                #     else:
-                #         setting.total_payments = 0
-                #     # Broadcast the message to all connected clients
-                #     data = {
-                #         'total_unread_messages': setting.total_unread_messages,
-                #         'total_new_payments': setting.total_payments,
-                #     }
-                #     channel_layer = get_channel_layer()
-                #     async_to_sync(channel_layer.group_send)('unread', {
-                #         'type': 'chat_message',
-                #         'message': json.dumps({
-                #             'data': data,
-                #         }),
-                #     })
 
-            except Profile.DoesNotExist:
-                pass
 
     # print(message.text, message.text == '/webapp')
     if message.text == '/webapp':

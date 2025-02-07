@@ -1,5 +1,5 @@
 from .views import *
-from .Consumers import Lottery, TotalUnRead, MessagesSocet
+from .Consumers import Lottery, TotalUnRead, MessagesSocet, TotalUnReadMessage
 from django.urls import path, re_path
 
 
@@ -53,4 +53,5 @@ websocket_urlpatterns = [
     re_path(r'ws/lottery/', Lottery.as_asgi()),
     re_path(r'ws/totalUnRead/', TotalUnRead.as_asgi()),
     re_path(r'ws/supportMessages/', MessagesSocet.as_asgi()),
+    re_path(r'ws/TotalUnReadMessage/', TotalUnReadMessage.as_asgi()),
 ]

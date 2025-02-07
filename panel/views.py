@@ -299,9 +299,14 @@ def loadProfileFriends(request):
         return JsonResponse(generate_response(error='Profile not found', status_code=404))
 
 def loadMessagesyHistoryOfProfile(request):
+    # Access ID from POST data
+    profile_id = request.GET.get('id')
+    number_unread_messages = request.GET.get('number_unread_messages')
 
     setting = Setting.objects.get(id=1)
-    setting.total_unread_messages = 0
+    setting.total_unread_messages -= int(number_unread_messages)
+    if setting.total_unread_messages < 0:
+        setting.total_unread_messages = 0
     setting.save()
 
     # Broadcast the message to all connected clients
@@ -317,9 +322,12 @@ def loadMessagesyHistoryOfProfile(request):
         }),
     })
     print(data)
-
-    # Access ID from POST data
-    profile_id = request.GET.get('id')
+    try:
+        profile = Profile.objects.get(id=profile_id)
+        profile.unread_message_number = 0
+        profile.save()
+    except Profile.DoesNotExist:
+        pass
     try:
         # Get the profile by ID
         messages = Messages.objects.filter(sender=profile_id)
@@ -343,7 +351,7 @@ def loadMessagesyHistoryOfProfile(request):
             })
         # Return profile data as a dictionary
         return JsonResponse(generate_response(message='successful', data=message_data))
-    except Profile.DoesNotExist:
+    except Messages.DoesNotExist:
         # Handle case where profile with ID is not found
         return JsonResponse(generate_response(error='Messages not found', status_code=404))
 
@@ -378,12 +386,14 @@ def loadMessagesContents(request):
         profile = Profile.objects.get(id=id)
         msg = Messages.objects.filter(sender=profile, status='OPEN')
         last_message = msg.order_by('-created_at').first()
-        total_unread_messages = msg.count()
+        # total_unread_messages = msg.count()
+        total_unread_messages = profile.unread_message_number
         sender_info = {
             'id': id,
             'enter_name': profile.enter_name,
             'enter_id': profile.enter_id,
             'user_id': profile.user_id,
+            'profile_id': profile.id,
             'profile_picture': profile.picture.url if profile.picture else None,
             'total_unread_messages': total_unread_messages,
             'last_message': last_message.message if last_message else None,
@@ -398,25 +408,6 @@ def deleteMessage(request):
         # Get the profile by ID
         message = Messages.objects.get(id=message_id)
         message.delete() # Delete the retrieved profile
-
-        setting = Setting.objects.get(id=1)
-        if setting.total_unread_messages is not None:
-            setting.total_unread_messages -= 1
-        else:
-            setting.total_unread_messages = 0
-        setting.save()
-        # Broadcast the message to all connected clients
-        data = {
-            'total_unread_messages': setting.total_unread_messages,
-            'total_new_payments': setting.total_payments,
-        }
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)('unread', {
-            'type': 'chat_message',
-            'message': json.dumps({
-                'data': data,
-            }),
-        })
 
         # Return profile data as a dictionary
         return JsonResponse(generate_response(message='message deleted successfully'))

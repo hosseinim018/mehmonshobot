@@ -19,6 +19,8 @@ class Profile(models.Model):
   # login_code = models.CharField(max_length=255, blank=True, null=True)  # Can be blank if not used
   # referral_code = models.CharField(max_length=255, blank=True, null=True, default=generate_uid())  # Can be blank if not used
   status = models.CharField(max_length=20, default="Unregistered", choices=(('Registered', 'Registered'), ('Registering', 'Registering'), ('Unregistered', 'Unregistered')))
+  unread_message_number = models.PositiveIntegerField(blank=True, null=True, default=0)
+  unread_payment_number = models.PositiveIntegerField(blank=True, null=True, default=0)
 
   def __str__(self):
       return f"{self.username} ({self.full_name})"  # Use f-strings for cleaner formatting
@@ -90,6 +92,8 @@ class Setting(models.Model):
     start_time = models.DateTimeField(blank=True, null=True)
     end_time = models.DateTimeField(blank=True, null=True)
     lottery_time = models.DateTimeField(blank=True, null=True)
+
+    is_lottery_started = models.BooleanField(default=False)
 
     channel = models.CharField(max_length=255, blank=True)
     link = models.URLField(blank=True)
