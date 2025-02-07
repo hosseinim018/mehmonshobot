@@ -726,7 +726,7 @@ def callback_query(query):
             keyboard = InlineKeyboardMarkup(keyboard)
             editMessageText(text=text, reply_markup=keyboard, chat_id=chat_id, message_id=message_id)
         else:
-            print('gateway')
+            # print('gateway')
             # create new payment
             payment = Payment.objects.create(
                 amount=setting.price,

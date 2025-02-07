@@ -352,6 +352,24 @@ def loadMessagesyHistory(request):
     return JsonResponse(generate_response(message='successful', data=message_data))
 
 def loadMessagesContents(request):
+
+    setting = Setting.objects.get(id=1)
+    setting.total_unread_messages = 0
+    setting.save()
+
+    # Broadcast the message to all connected clients
+    data = {
+        'total_unread_messages': setting.total_unread_messages,
+        'total_new_payments': setting.total_payments,
+    }
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)('unread', {
+        'type': 'chat_message',
+        'message': json.dumps({
+            'data': data,
+        }),
+    })
+
     senders = Messages.objects.values_list('sender__pk', flat=True).distinct()
     sender_data = []
     for id in senders:
@@ -1077,6 +1095,21 @@ def endLottery(request):
 
 def getPaymentsDate(request):
     try:
+        setting = Setting.objects.get(id=1)
+        setting.total_payments = 0
+        setting.save()
+        # Broadcast the message to all connected clients
+        data = {
+            'total_unread_messages': setting.total_unread_messages,
+            'total_new_payments': setting.total_payments,
+        }
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)('unread', {
+            'type': 'chat_message',
+            'message': json.dumps({
+                'data': data,
+            }),
+        })
         lotteries = Lottery.objects.filter(payment_status='PENDING', status="Registered")
         data = []
         for lottery in list(lotteries.values()):
@@ -1285,7 +1318,7 @@ def paymentMessage(request):
                     try:
                         obj = Payment.objects.filter(authority=authority).last()
                         obj.status = status
-                        print(obj)
+                        # print(obj)
                         obj.save()
                         lottery = obj.lottery
                         user_id = lottery.profile.user_id
@@ -1306,6 +1339,26 @@ def paymentMessage(request):
                         lottery.status = "Registered"
                         lottery.ticket_picture = path_file[len("media/"):]
                         lottery.save()
+
+                        setting = Setting.objects.get(id=1)
+                        if setting.total_payments is not None:
+                            setting.total_payments += 1
+                        else:
+                            setting.total_payments = 0
+
+                        setting.save()
+                        # Broadcast the message to all connected clients
+                        data = {
+                            'total_unread_messages': setting.total_unread_messages,
+                            'total_new_payments': setting.total_payments,
+                        }
+                        channel_layer = get_channel_layer()
+                        async_to_sync(channel_layer.group_send)('unread', {
+                            'type': 'chat_message',
+                            'message': json.dumps({
+                                'data': data,
+                            }),
+                        })
                         return JsonResponse(generate_response(message='Transaction success.', data=response, error=False))
                     except Payment.DoesNotExist:
                         return JsonResponse(generate_response(message='Transaction failed .', data=response, error=True))
@@ -1332,3 +1385,39 @@ def getPayments(request):
         data.append(d)
     return JsonResponse(generate_response(message='successful', data=data))
 
+def read_payments(request):
+    setting = Setting.objects.get(id=1)
+    setting.total_payments = 0
+    setting.save()
+    # Broadcast the message to all connected clients
+    data = {
+        'total_unread_messages': setting.total_unread_messages,
+        'total_new_payments': setting.total_payments,
+    }
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)('unread', {
+        'type': 'chat_message',
+        'message': json.dumps({
+            'data': data,
+        }),
+    })
+    return JsonResponse(generate_response(message='successful'))
+
+def read_unread_messages(request):
+    setting = Setting.objects.get(id=1)
+    setting.total_unread_messages = 0
+    setting.save()
+
+    # Broadcast the message to all connected clients
+    data = {
+        'total_unread_messages': setting.total_unread_messages,
+        'total_new_payments': setting.total_payments,
+    }
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)('unread', {
+        'type': 'chat_message',
+        'message': json.dumps({
+            'data': data,
+        }),
+    })
+    return JsonResponse(generate_response(message='successful'))
