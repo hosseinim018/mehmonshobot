@@ -158,17 +158,24 @@ def Check_time_validation(start, end, setting):
         # print(start.time(), today.time(), end.time())
 
         days_of_week = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه']
+
+        # Convert to Shamsi date
+        time_zone = jdatetime.timedelta(hours=3, minutes=30)
+
         shamsi_start_time = jdatetime.datetime.fromgregorian(datetime=setting.start_time)
+        shamsi_start_time = shamsi_start_time + time_zone
         start_time = {
             'day': days_of_week[shamsi_start_time.weekday()],
             'time': shamsi_start_time.strftime('%H:%M')
         }
         shamsi_end_time = jdatetime.datetime.fromgregorian(datetime=setting.end_time)
+        shamsi_end_time = shamsi_end_time + time_zone
         end_time = {
             'day': days_of_week[shamsi_end_time.weekday()],
             'time': shamsi_end_time.strftime('%H:%M')
         }
         shamsi_lottery_time = jdatetime.datetime.fromgregorian(datetime=setting.lottery_time)
+        shamsi_lottery_time = shamsi_lottery_time + time_zone
         lottery_time = {
             'day': days_of_week[shamsi_lottery_time.weekday()],
             'time': shamsi_lottery_time.strftime('%H:%M')
