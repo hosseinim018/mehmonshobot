@@ -17,6 +17,7 @@ urlpatterns = [
     path("loadMessagesContents", loadMessagesContents),
     path("deleteProfile", deleteProfile),
     path("deleteMessage", deleteMessage),
+    path("removeAllMessageProfile", removeAllMessageProfile),
     path("closeMessage", closeMessage),
     path("addAdmin", addAdmin),
     path("getAdmins", getAdmins),

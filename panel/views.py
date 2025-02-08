@@ -415,6 +415,21 @@ def deleteMessage(request):
         # Handle case where profile with ID is not found
         return JsonResponse(generate_response(error='message not found', status_code=404))
 
+def removeAllMessageProfile(request):
+    # Access ID from POST data
+    id = request.GET.get('id')
+    try:
+        profile = Profile.objects.get(id=id)
+        # Get the profile by ID
+        message = Messages.objects.filter(sender=profile)
+        message.delete() # Delete the retrieved profile
+
+        # Return profile data as a dictionary
+        return JsonResponse(generate_response(message='message deleted successfully'))
+    except Messages.DoesNotExist:
+        # Handle case where profile with ID is not found
+        return JsonResponse(generate_response(error='message not found', status_code=404))
+
 def closeMessage(request):
     # Access ID from POST data
     message_id = request.GET.get('id')
@@ -991,8 +1006,8 @@ def setDate(request):
         # Convert the input datetime to Jalali datetime
         jalali_datetime = jdatetime.datetime.fromgregorian(datetime=lottery_datetime)
         # Create a timedelta for 15 minutes before and 5 minutes after
-        fifteen_minutes_before = jalali_datetime - timedelta(minutes=1)
-        five_minutes_after = jalali_datetime + timedelta(minutes=1)
+        fifteen_minutes_before = jalali_datetime - timedelta(minutes=15)
+        five_minutes_after = jalali_datetime + timedelta(minutes=15)
 
         setting = Setting.objects.get(id=1)
         setting.start_time = start

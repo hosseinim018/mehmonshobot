@@ -35,7 +35,7 @@ def sendToAll(message):
         [InlineKeyboardButton("قرعه کشی", web_app=web_app)],
     ]
     keyboard = InlineKeyboardMarkup(keyboard)
-    print(keyboard)
+    # print(keyboard)
     lotteries = Lottery.objects.all()
     for lottery in lotteries:
         profile = lottery.profile
@@ -93,7 +93,7 @@ def lottery_started():
             'winners': random_lotteries
         }),
     })
-    lottery_msg_channel = 'قرعه کشی شروع شده, برای تماشا به صورت زنده و لیست شرکت کنندگان از طریق دکمه زیر اقدام کنید'
+    lottery_msg_channel = 'قرعه کشی شروع شده, از طریق ربات برای تماشای قرعه کشی به صورت زنده استفاده کنید'
     sendToChannel(lottery_msg_channel)
 
 
@@ -116,13 +116,15 @@ def lottery_ended():
         names.append(profile.enter_name)
         chat_id = profile.user_id
         sendMessage(chat_id=chat_id, text=message)
+    if names:
+        names = ', '.join(names)
+        lottery_msg_channel = "پایان قرعه کشی, برندگان:" + "\n" + names
+        sendToChannel(lottery_msg_channel)
+        # sendToAll(lottery_msg_channel)
 
-    names = ', '.join(names)
-    lottery_msg_channel = "پایان قرعه کشی, برندگان:" + "\n" + names
-    sendToChannel(lottery_msg_channel)
-    # sendToAll(lottery_msg_channel)
-
-    registered_lotteries = Lottery.objects.filter(status='Registered')
-    for lottery in registered_lotteries:
-        lottery.status = 'Unregistered'
-        lottery.save()
+        registered_lotteries = Lottery.objects.filter(status='Registered')
+        for lottery in registered_lotteries:
+            lottery.status = 'Unregistered'
+            lottery.save()
+    else:
+        sendToChannel('این هفته هیچ برنده ای نداشتیم!')
