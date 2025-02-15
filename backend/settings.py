@@ -108,7 +108,7 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'database/db.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
 
@@ -214,12 +214,22 @@ LOGGING = {
 # Daphne
 ASGI_APPLICATION = "backend.asgi.application"
 
+# CHANNEL_LAYERS_HOST = "redis://127.0.0.1:6379"
+CHANNEL_LAYERS_HOST = "redis://default:ud6PEzgZPn9Yf7NdxAss@myredis-ffe-service:6379"
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [CHANNEL_LAYERS_HOST],
+        },
+    },
+}
 # Celery settings
 REDIS_BASE_URL = "redis://default:ud6PEzgZPn9Yf7NdxAss@myredis-ffe-service:6379"
+# REDIS_BASE_URL = "redis://default:ud6PEzgZPn9Yf7NdxAss@remote.runflare.com:32516"
 # REDIS_BASE_URL = "redis://127.0.0.1:6379"
 CELERY_BROKER_URL = f"{REDIS_BASE_URL}/0"
 CELERY_RESULT_BACKEND = f"{REDIS_BASE_URL}/0"
-CHANNEL_LAYERS_HOST = f"{REDIS_BASE_URL}/0"
 
 
 # Timezone settings
@@ -228,11 +238,11 @@ CELERY_TIMEZONE = 'Asia/Tehran'  # Set the timezone to Asia/Tehran
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # CHANNELS
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    },
-}
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels.layers.InMemoryChannelLayer',
+#     },
+# }
 # CHANNEL_LAYERS = {
 #     "default": {
 #         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -247,3 +257,5 @@ SANDBOX = True
 MERCHANT = 'e6a82528-4314-411a-bbc5-a6b63a2ba105'
 PAYMENT_CALLBACK_URL = f'https://{ALLOWED_HOSTS[0]}/paymentMessage/'
 
+# import sys
+# sys.stdout.reconfigure(encoding='utf-8')

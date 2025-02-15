@@ -133,7 +133,7 @@ def LoginView(request):
             return JsonResponse(generate_response(message='successful'))
         else:
             # Login failed
-            return JsonResponse(generate_response(message='حطا در ورود: نام کاربری یا یوزرنیم بافت نشد!', error='Login failed', status_code=404), status=401)
+            return JsonResponse(generate_response(message='خطا در ورود: نام کاربری یا رمزعبور صحیح نیست!', error='Login failed', status_code=404), status=401)
     else:
         return render(request, 'Login.html')
 
@@ -988,7 +988,7 @@ def setDate(request):
         import datetime
         import jdatetime
         from datetime import timedelta
-
+        #
         # from channels.layers import get_channel_layer
         # from asgiref.sync import async_to_sync
         # channel_layer = get_channel_layer()
@@ -1006,8 +1006,8 @@ def setDate(request):
         # Convert the input datetime to Jalali datetime
         jalali_datetime = jdatetime.datetime.fromgregorian(datetime=lottery_datetime)
         # Create a timedelta for 15 minutes before and 5 minutes after
-        fifteen_minutes_before = jalali_datetime - timedelta(minutes=15)
-        five_minutes_after = jalali_datetime + timedelta(minutes=15)
+        fifteen_minutes_before = jalali_datetime - timedelta(minutes=1)
+        five_minutes_after = jalali_datetime + timedelta(minutes=1)
 
         setting = Setting.objects.get(id=1)
         setting.start_time = start
@@ -1023,7 +1023,7 @@ def setDate(request):
         befor_cron = set_crontab_schedule(minute=fifteen_minutes_before.minute, hour=fifteen_minutes_before.hour, day_of_week=dayofweek)
         set_periodic_task_with_crontab(
             crontab_schedule=befor_cron,
-              task_name='Scheduled Befor Lottery Task',
+            task_name='Scheduled Befor Lottery Task',
             task_path='panel.tasks.lottery_before_start'
         )
 
