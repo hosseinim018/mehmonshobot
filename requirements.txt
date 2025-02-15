@@ -12,3 +12,4 @@ redis
 daphne
 channels
 psycopg2
+channels_redis
