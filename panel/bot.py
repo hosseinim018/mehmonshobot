@@ -609,14 +609,13 @@ def callback_query(query):
         friend_id = data[1]
         lottery_id = data[2]
         friend_name = data[3]
-        print(query.data)
+        # print(query.data)
         try:
             lottery = Lottery.objects.get(id=lottery_id)
             profile = Profile.objects.get(id=friend_id)
 
             keyboard = query.message.reply_markup['inline_keyboard']
-            for k in keyboard:
-                print(k)
+
             for inner_list in keyboard:
                 for item in inner_list:
                     if item['text'] == 'بازگشت':

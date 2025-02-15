@@ -12,9 +12,25 @@ import random, json
 from django.conf import settings as dj_settings
 from django.forms.models import model_to_dict
 import datetime
+import jdatetime
 
 logger = get_task_logger(__name__)
 ALLOWED_HOSTS = dj_settings.ALLOWED_HOSTS[0] if dj_settings.ALLOWED_HOSTS else 'mybotadmin.site'
+
+channel_layer = get_channel_layer()
+
+def convert_date(date):
+    if date:
+        # Convert to Shamsi date
+        shamsi_date = jdatetime.datetime.fromgregorian(datetime=date)
+        time_zone = jdatetime.timedelta(hours=3, minutes=30)
+        shamsi_date = shamsi_date + time_zone
+        # Update the field in the dictionary
+        return shamsi_date.strftime('%H:%M %Y/%m/%d')
+    else:
+        current_datetime = jdatetime.datetime.now()
+        return current_datetime.strftime('%H:%M %Y/%m/%d')
+
 
 @shared_task
 def sendToChannel(message):
@@ -45,51 +61,58 @@ def sendToAll(message):
 
 @shared_task
 def lottery_before_start():
-    channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)('chat', {
         'type': 'chat_message',
         'message': json.dumps({
-            'status': False,
+            'status': True,
         }),
     })
+    setting = Setting.objects.get(id=1)
+    setting.is_lottery_started = True
+    setting.save()
+
     befor_lottery_channel_message = 'قرعه کشی 15 دقیقه دیگر شروع میشود, از طریق ربات برای تماشای قرعه کشی به صورت زنده استفاده کنید'
     befor_lottery_message = 'قرعه کشی 15 دقیقه دیگر شروع میشود, از دکمه زیر برای تماشای قرعه کشی به صورت زنده استفاده کنید'
     sendToChannel(befor_lottery_channel_message)
     sendToAll(befor_lottery_message)
 
+
 @shared_task
 def lottery_started():
+    logger.info("lottery_started is running.")
+
     lotteries = Lottery.objects.filter(status='Registered', payment_status='PAID')
     # Get a list of all matching lotteries
     lottery_list = list(lotteries)
-
     # Randomly select 3 lotteries from the list
 
-    random_lotteries = lottery_list if len(lottery_list) < 4 else random.sample(lottery_list, 3)
+    random_lotteries = random.sample(lottery_list, 1) if len(lottery_list) < 4 else random.sample(lottery_list, 3)
 
     random_lotteries = [model_to_dict(obj) for obj in random_lotteries]
     winners_id = []
     for l in random_lotteries:
-        l['ticket_picture'] = l['ticket_picture'].url
-        l['payment_picture'] = l['payment_picture'].url
+        l['ticket_picture'] = l['ticket_picture'].url if l['ticket_picture'] else None
+        l['payment_picture'] = l['payment_picture'].url if l['payment_picture'] else None
         id = l['profile']
         winners_id.append(id)
         profile = Profile.objects.get(id=id)
         l['profile_picture'] = profile.picture.url if profile.picture else None
         l['enter_name'] = profile.enter_name
         l['enter_id'] = profile.enter_id
+        l['register_date'] = convert_date(l['register_date'])
+        # print(l['register_date'])
         del l['friends']
-        # ll = Lottery.objects.get(pk=l['id'])
-        # ll.winning = True
-        # ll.save()
-
+        del l['register_date']
+        ll = Lottery.objects.get(pk=l['id'])
+        ll.winning = True
+        ll.save()
+    # print(random_lotteries)
     lottery_history = LotteryHistory(winners=winners_id)
     lottery_history.save()
-    channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)('chat', {
         'type': 'chat_message',
         'message': json.dumps({
-            'status': True,
+            'win_waiting': False,
             'winners': random_lotteries
         }),
     })
@@ -97,20 +120,23 @@ def lottery_started():
     sendToChannel(lottery_msg_channel)
 
 
-
 @shared_task
 def lottery_ended():
-    # channel_layer = get_channel_layer()
-    # async_to_sync(channel_layer.group_send)('chat', {
-    #     'type': 'chat_message',
-    #     'message': json.dumps({
-    #         'status': None,
-    #     }),
-    # })
+    logger.info("lottery_ended is running.")
+    setting = Setting.objects.get(id=1)
+    setting.is_lottery_started = False
+    setting.save()
+    async_to_sync(channel_layer.group_send)('chat', {
+        'type': 'chat_message',
+        'message': json.dumps({
+            'status': False,
+        }),
+    })
     lh = LotteryHistory.objects.last()
     winners = lh.winners
     names = []
     message = 'تبریک! شما برنده این هفته قرعه کشی شده اید.'
+    logger.info(f'winners: {winners}')
     for id in winners:
         profile = Profile.objects.get(id=id)
         names.append(profile.enter_name)
@@ -120,11 +146,11 @@ def lottery_ended():
         names = ', '.join(names)
         lottery_msg_channel = "پایان قرعه کشی, برندگان:" + "\n" + names
         sendToChannel(lottery_msg_channel)
-        # sendToAll(lottery_msg_channel)
+        sendToAll(lottery_msg_channel)
 
         registered_lotteries = Lottery.objects.filter(status='Registered')
         for lottery in registered_lotteries:
             lottery.status = 'Unregistered'
-            lottery.save()
+        lottery.save()
     else:
         sendToChannel('این هفته هیچ برنده ای نداشتیم!')
