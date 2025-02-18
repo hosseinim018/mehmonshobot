@@ -40,7 +40,7 @@ def sendToChannel(message):
     # logger.info(f"lottery is send to channenl. {message}")
     setting = Setting.objects.get(id=1)
     channdel_id = setting.channel
-    sendMessage(chat_id=channdel_id, text=message)
+    # sendMessage(chat_id=channdel_id, text=message)
 
 
 @shared_task

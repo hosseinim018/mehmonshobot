@@ -40,7 +40,7 @@ def create_media_directories(base_dir):
         else:
             print(f"Directory already exists: {directory}")
 
-create_media_directories(BASE_DIR)
+# create_media_directories(BASE_DIR)
 
 
 # Quick-start development settings - unsuitable for production
@@ -54,7 +54,7 @@ DEBUG = True
 
 # ALLOWED_HOSTS = []
 ALLOWED_HOSTS = ["mybotadmin.site", "mehmoonshobot.runflare.run", "127.0.0.1", "localhost"]
-
+DOMAIN = "mybotadmin.site"
 # Application definition
 
 INSTALLED_APPS = [
@@ -259,3 +259,16 @@ PAYMENT_CALLBACK_URL = f'https://{ALLOWED_HOSTS[0]}/paymentMessage/'
 
 # import sys
 # sys.stdout.reconfigure(encoding='utf-8')
+
+
+# EMAIL:
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # For production use
+# For development, you can use console backend instead:
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+EMAIL_HOST = 'smtp-de-01.runflare.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'info@mybotadmin.site'
+EMAIL_HOST_PASSWORD = 'Ashkan19931372@#$'
+DEFAULT_FROM_EMAIL = 'info@mybotadmin.site'

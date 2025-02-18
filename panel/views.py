@@ -175,7 +175,7 @@ def password_reset_view(request):
                 if request.method == 'POST':
                     password1 = request.GET.get('new_password1')
                     password2 = request.GET.get('new_password2')
-                    print(password1, password2)
+                    # print(password1, password2)
                     # form = SetPasswordForm(user, request.POST)
                     # form = SetPasswordForm(user, data={'new_password1': password1, 'new_password2': password2})
                     form = SetPasswordForm(user, {
@@ -205,6 +205,93 @@ def password_reset_confirm_view(request):
     form = SetPasswordForm(user)
     return render(request, 'password_reset_confirm.html', {'form': form})
 
+
+# accounts/views.py
+from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
+from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.shortcuts import render, redirect
+from django.template.loader import render_to_string
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.conf import settings
+
+@csrf_exempt
+def password_reset_request(request):
+    email = request.GET.get('email')
+    if request.method == "POST":
+        form = PasswordResetForm({'email': email})
+        if form.is_valid():
+            associated_users = User.objects.filter(email=email)
+            print('associated users is:\n', associated_users)
+            if associated_users.exists():
+                for user in associated_users:
+                    # Generate email content
+                    subject = "Password Reset Request"
+                    email_template = "password_reset_email.html"
+                    context = {
+                        "email": user.email,
+                        "domain": settings.DOMAIN,  # Your website domain
+                        "site_name": "Mehmonsho Panel",
+                        "uid": urlsafe_base64_encode(force_bytes(user.pk)),
+                        "user": user,
+                        "token": default_token_generator.make_token(user),
+                        "protocol": "https" if request.is_secure() else "http",
+                    }
+                    email_content = render_to_string(email_template, context)
+                    # Send email
+                    send_mail(
+                        subject,
+                        email_content,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [user.email],
+                        fail_silently=False,
+                    )
+                    print('send mail')
+                return JsonResponse(generate_response(message='password_reset_confirm'))
+            else:
+                return JsonResponse(generate_response(message='user_not_found'))
+        else:
+            return JsonResponse(generate_response(message='invalid_email', data={"form": serialize_form(form)}))
+    # else:
+    #     form = PasswordResetForm()
+    # return JsonResponse(generate_response(message='password_reset_form', data={"form": form}))
+
+
+def password_reset_confirm(request, uidb64, token):
+    print('password_reset_confirm', uidb64, token)
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        if request.method == "POST":
+
+            password1 = request.GET.get('new_password1')
+            password2 = request.GET.get('new_password2')
+            form = SetPasswordForm(user, {
+                'new_password1': password1,
+                'new_password2': password2
+            })
+            if form.is_valid():
+                form.save()
+                return JsonResponse(generate_response(message='password_reset_successful'))
+            else:
+                return JsonResponse(generate_response(message='password_reset_errors', data=form.errors.as_json()))
+        else:
+            form = SetPasswordForm(user)
+
+        # return JsonResponse(generate_response(message='password_reset_errors', data=form.errors.as_json()))
+        return render(request, "password_reset_confirm.html", {"form": form})
+    else:
+        JsonResponse(generate_response(message='password_reset_invalid'))
+
+
+def password_reset_complete(request):
+    return render(request, 'passwordResetComplete.html')
 
 
 def LotteryView(request):
