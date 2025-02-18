@@ -316,15 +316,19 @@ def lottery(message):
                         text = friendList + '\n' + game_name + '\n' + msg
                         games = Games.objects.all()
                         keyboard = []
-                        for game in games:
-                            inline_keyboard = InlineKeyboardButton(game.name,
-                                                                   callback_data=f'selectedGame-{lottery.id}-{game.id}-{game.name}')
-                            keyboard.append(inline_keyboard)
-                        keyboard = keyboard_generator(keyboard)
-                        keyboard = InlineKeyboardMarkup(keyboard)
-                        # query.message.answer(text, keyboard=keyboard)
-                        # editMessageText(text=text, reply_markup=keyboard, chat_id=chat_id, message_id=message_id)
-                        message.answer(text, keyboard=keyboard)
+                        if games:
+                            for game in games:
+                                inline_keyboard = InlineKeyboardButton(game.name,
+                                                                       callback_data=f'selectedGame-{lottery.id}-{game.id}-{game.name}')
+                                keyboard.append(inline_keyboard)
+                            keyboard = keyboard_generator(keyboard)
+                            keyboard = InlineKeyboardMarkup(keyboard)
+                            # query.message.answer(text, keyboard=keyboard)
+                            # editMessageText(text=text, reply_markup=keyboard, chat_id=chat_id, message_id=message_id)
+                            message.answer(text, keyboard=keyboard)
+                        else:
+                            text = 'هیچ فعالیت یافت نشد!احتمالا ادمین هیچ فعالیت اضافه نکرده برای اطلاعات بیشتر با پشتیبانی تماس بگیرین.'
+                            message.answer(text)
                     except Games.DoesNotExist:
                         text = 'هیچ فعالیت یافت نشد!احتمالا ادمین هیچ فعالیت اضافه نکرده برای اطلاعات بیشتر با پشتیبانی تماس بگیرین.'
                         message.answer(text)

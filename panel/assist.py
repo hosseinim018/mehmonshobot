@@ -285,4 +285,6 @@ def get_date_in_current_week(input_datetime):
         # Calculate the start of the next week
         target_datetime = input_datetime + jdatetime.timedelta(days=7 - current_datetime.weekday() + 1)
     target_datetime = target_datetime.replace(hour=input_datetime.hour, minute=input_datetime.minute)
+    time_zone = jdatetime.timedelta(hours=3, minutes=30)
+    target_datetime += time_zone
     return target_datetime.strftime('%H:%M %Y/%m/%d')
