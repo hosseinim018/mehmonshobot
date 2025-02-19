@@ -40,7 +40,7 @@ def create_media_directories(base_dir):
         else:
             print(f"Directory already exists: {directory}")
 
-# create_media_directories(BASE_DIR)
+create_media_directories(BASE_DIR)
 
 
 # Quick-start development settings - unsuitable for production
