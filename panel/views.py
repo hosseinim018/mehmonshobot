@@ -199,7 +199,7 @@ def password_reset_view(request):
             return JsonResponse(generate_response(error='User not found', status_code=404))
     return JsonResponse(generate_response(message='Username not found', status_code=404))
 
-
+@csrf_exempt
 def password_reset_confirm_view(request):
     user = User.objects.get(id=1)
     form = SetPasswordForm(user)
@@ -258,7 +258,7 @@ def password_reset_request(request):
     #     form = PasswordResetForm()
     # return JsonResponse(generate_response(message='password_reset_form', data={"form": form}))
 
-
+@csrf_exempt
 def password_reset_confirm(request, uidb64, token):
     print('password_reset_confirm', uidb64, token)
     try:
@@ -289,14 +289,15 @@ def password_reset_confirm(request, uidb64, token):
     else:
         JsonResponse(generate_response(message='password_reset_invalid'))
 
-
+@csrf_exempt
 def password_reset_complete(request):
     return render(request, 'passwordResetComplete.html')
 
-
+@csrf_exempt
 def LotteryView(request):
     return render(request, 'Lottery.html')
 
+@csrf_exempt
 def InfoView(request):
     return render(request, 'Info.html')
 
