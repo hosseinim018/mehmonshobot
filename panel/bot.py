@@ -832,37 +832,37 @@ def any(message):
         if data['callback_data'] == 'paid':
             try:
                 profile = Profile.objects.get(user_id=message.chat.id)
-                # if message.photo != None:
-                #     lottery = Lottery.objects.filter(profile=profile).last()
-                #     file_id = message.photo[-1].file_id
-                #     f = getFile(file_id)
-                #     file_path = f['result']['file_path']
-                #     filename = get_filename_with_date(message.chat.id, '.jpg')
-                #     pic = bot.download_file(filename=filename, dir_path='media/img/uploads', file_path=file_path)
-                #     filename = 'img/uploads/' + filename
-                #     lottery.payment_picture = filename
-                #     lottery.save()
-                #     text = 'فیش شما با موفقیت ارسال شد منتظر تایید ادمین باشید.'
-                #     message.answer(text)
-                #     conv.cancel()
-                #
-                #     setting = Setting.objects.get(id=1)
-                #     if setting.total_payments is not None:
-                #         setting.total_payments += 1
-                #     else:
-                #         setting.total_payments = 0
-                #     # Broadcast the message to all connected clients
-                #     data = {
-                #         'total_unread_messages': setting.total_unread_messages,
-                #         'total_new_payments': setting.total_payments,
-                #     }
-                #     channel_layer = get_channel_layer()
-                #     async_to_sync(channel_layer.group_send)('unread', {
-                #         'type': 'chat_message',
-                #         'message': json.dumps({
-                #             'data': data,
-                #         }),
-                #     })
+                if message.photo != None:
+                    lottery = Lottery.objects.filter(profile=profile).last()
+                    file_id = message.photo[-1].file_id
+                    f = getFile(file_id)
+                    file_path = f['result']['file_path']
+                    filename = get_filename_with_date(message.chat.id, '.jpg')
+                    pic = bot.download_file(filename=filename, dir_path='media/img/uploads', file_path=file_path)
+                    filename = 'img/uploads/' + filename
+                    lottery.payment_picture = filename
+                    lottery.save()
+                    text = 'فیش شما با موفقیت ارسال شد منتظر تایید ادمین باشید.'
+                    message.answer(text)
+                    conv.cancel()
+
+                    setting = Setting.objects.get(id=1)
+                    if setting.total_payments is not None:
+                        setting.total_payments += 1
+                    else:
+                        setting.total_payments = 0
+                    # Broadcast the message to all connected clients
+                    data = {
+                        'total_unread_messages': setting.total_unread_messages,
+                        'total_new_payments': setting.total_payments,
+                    }
+                    channel_layer = get_channel_layer()
+                    async_to_sync(channel_layer.group_send)('unread', {
+                        'type': 'chat_message',
+                        'message': json.dumps({
+                            'data': data,
+                        }),
+                    })
 
             except Profile.DoesNotExist:
                 pass
@@ -1093,17 +1093,6 @@ def any(message):
                 message.answer(text)
 
 
-    # print(message.text, message.text == '/webapp')
-    if message.text == '/webapp':
-        text = 'we are testing webapp...'
-        message.answer(text)
-        web_app = WebAppInfo(url="https://mybotadmin.site/")
-        keyboard = [
-            [InlineKeyboardButton("click me!", web_app=web_app)],
-        ]
-        keyboard = InlineKeyboardMarkup(keyboard)
-        text = 'this is web app! click to below btn to open it.'
-        message.answer(text, keyboard=keyboard)
 
 UPDATE_HANDLER = {
     'message': [start, any, visit_channel, share_invite_link, friends_management, edit_profile, bot_tutorial, bot_support, lottery, lottery_info, info],

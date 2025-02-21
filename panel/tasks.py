@@ -85,8 +85,10 @@ def lottery_started():
     # Get a list of all matching lotteries
     lottery_list = list(lotteries)
     # Randomly select 3 lotteries from the list
-
-    random_lotteries = random.sample(lottery_list, 1) if len(lottery_list) < 4 else random.sample(lottery_list, 3)
+    if len(lottery_list) == 0:
+        random_lotteries = []
+    else:
+        random_lotteries = random.sample(lottery_list, 1) if len(lottery_list) < 4 else random.sample(lottery_list, 3)
 
     random_lotteries = [model_to_dict(obj) for obj in random_lotteries]
     winners_id = []
