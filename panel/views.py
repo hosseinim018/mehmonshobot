@@ -422,6 +422,8 @@ def loadMessagesyHistoryOfProfile(request):
         message_data = []
         for message in messages:
             shamsi_date = jdatetime.datetime.fromgregorian(datetime=message.created_at)
+            time_zone = jdatetime.timedelta(hours=3, minutes=30)
+            shamsi_date = shamsi_date + time_zone
             sender_profile = message.sender
             message_data.append({
                 'id': message.id,
@@ -474,6 +476,12 @@ def loadMessagesContents(request):
         profile = Profile.objects.get(id=id)
         msg = Messages.objects.filter(sender=profile, status='OPEN')
         last_message = msg.order_by('-created_at').first()
+        if last_message.message:
+            last_message = last_message.message
+        elif last_message.answer:
+            last_message = last_message.answer
+        else:
+            last_message = None
         # total_unread_messages = msg.count()
         total_unread_messages = profile.unread_message_number
         sender_info = {
@@ -484,7 +492,7 @@ def loadMessagesContents(request):
             'profile_id': profile.id,
             'profile_picture': profile.picture.url if profile.picture else None,
             'total_unread_messages': total_unread_messages,
-            'last_message': last_message.message if last_message else None,
+            'last_message': last_message,
         }
         sender_data.append(sender_info)
     return JsonResponse(generate_response(message='successful', data=sender_data))
@@ -569,16 +577,15 @@ def modalHandlerLotteryProfile(request):
     except Profile.DoesNotExist:
         # Handle case where profile with ID is not found
         return JsonResponse(generate_response(error='Profile not found', status_code=404))
-
 def modalHandlerLotteryWinningProfile(request):
     # Access ID from POST data
     profile_id = request.GET.get('id')
     try:
         # Get the profile by ID
         profile = Profile.objects.get(id=profile_id)
-
-        lotteries = profile.lottery_entries.all()
-        lotteries = lotteries.filter(winning=True)
+        lotteries = LotteryWinner.objects.filter(lottery__profile=profile)
+        # lotteries = profile.lottery_entries.all()
+        # lotteries = lotteries.filter(winning=True)
 
         data = []
         for lottery in list(lotteries.values()):
@@ -595,19 +602,72 @@ def modalHandlerLotteryWinningProfile(request):
         # Handle case where profile with ID is not found
         return JsonResponse(generate_response(error='Profile not found', status_code=404))
 
+
+def modalHandlerLotteryWinningProfile(request):
+    profile_id = request.GET.get('id')
+    try:
+        profile = Profile.objects.get(id=profile_id)
+        # Get LotteryWinners for this profile
+        winners = LotteryWinner.objects.filter(lottery__profile=profile).select_related('lottery')
+        print(winners)
+        data = []
+        for winner in winners:
+            lottery = winner.lottery  # Access the related Lottery directly
+            entry = {
+                'id': lottery.id,
+                'ticket': lottery.ticket,
+                'register_date': convert_date(lottery.register_date),
+                'game': lottery.game.name if lottery.game else '',
+                'payment_picture': lottery.payment_picture.url if lottery.payment_picture else None,
+                'friends': [{'id': f.id, 'enter_name': f.enter_name} for f in lottery.friends.all()],
+                'prize': winner.prize,
+                'payment_status': winner.prize_status
+            }
+            data.append(entry)
+
+        return JsonResponse(generate_response(message='successful', data=data))
+
+    except Profile.DoesNotExist:
+        return JsonResponse(generate_response(error='Profile not found', status_code=404))
+# def modalHandlerLotteryWinningProfile(request):
+#     # Access ID from POST data
+#     profile_id = request.GET.get('id')
+#     try:
+#         # Get the profile by ID
+#         profile = Profile.objects.get(id=profile_id)
+#         lotteries = LotteryWinner.objects.filter(lottery__profile=profile)
+#         # lotteries = profile.lottery_entries.all()
+#         # lotteries = lotteries.filter(winning=True)
+#
+#         data = []
+#         for lottery in list(lotteries.values()):
+#             l = Lottery.objects.get(pk=lottery['id'])
+#             friends = l.friends.all()
+#             lottery['friends'] = [{'id': f['id'], 'enter_name': f['enter_name']} for f in friends.values()]
+#             lottery['game'] = l.game.name if l.game else ''
+#             lottery['payment_picture'] = l.payment_picture.url if l.payment_picture else None,
+#             lottery['register_date'] = convert_date(lottery['register_date'])
+#             data.append(lottery)
+#         # Return profile data as a dictionary
+#         return JsonResponse(generate_response(message='successful', data=data))
+#     except Profile.DoesNotExist:
+#         # Handle case where profile with ID is not found
+#         return JsonResponse(generate_response(error='Profile not found', status_code=404))
+
 def modalHandlerLotteryWinning(request):
-    winning_lotteries = Lottery.objects.select_related('profile').filter(winning=True)  # Adjust filter criteria as needed
+    winners = LotteryWinner.objects.all()
 
     # Prepare data for rendering (optional)
     lottery_data = []
-    for lottery in winning_lotteries:
+    for winner in winners:
+        lottery = winner.lottery
         lottery_data.append({
             'id': lottery.id,
             'profile_id': lottery.profile.id,
             'register_date': convert_date(lottery.register_date),
             'game': lottery.game.name if lottery.game else '',
             'ticket': lottery.ticket,
-            'payment_status': lottery.payment_status,
+            'payment_status': winner.prize_status,
             'friends': [{'id': f['id'], 'enter_name': f['enter_name']} for f in lottery.friends.values()],
             'enter_name': lottery.profile.enter_name,
             'enter_id': lottery.profile.enter_id,
@@ -732,6 +792,8 @@ def setCard(request):
     card_name = request.GET.get('card_name')
     card_number = request.GET.get('card_number')
     price = request.GET.get('price')
+    profit = request.GET.get('profit')
+    cost = request.GET.get('cost')
     payment_method = request.GET.get('payment_method')
     try:
         # Get the profile by ID
@@ -739,6 +801,8 @@ def setCard(request):
         setting.card_name = card_name
         setting.card_number = card_number
         setting.price = price
+        setting.profit = profit
+        setting.cost = cost
         setting.payment_method = payment_method
         setting.save()
         # Return profile data as a dictionary
@@ -752,6 +816,8 @@ def updateCard(request):
     card_name = request.GET.get('card_name')
     card_number = request.GET.get('card_number')
     price = request.GET.get('price')
+    profit = request.GET.get('profit')
+    cost = request.GET.get('cost')
     payment_method = request.GET.get('payment_method')
     try:
         # Get the profile by ID
@@ -759,6 +825,8 @@ def updateCard(request):
         setting.card_name = card_name
         setting.card_number = card_number
         setting.price = price
+        setting.profit = profit
+        setting.cost = cost
         setting.payment_method = payment_method
         setting.save()
         # Return profile data as a dictionary
@@ -766,6 +834,52 @@ def updateCard(request):
     except Admins.DoesNotExist:
         # Handle case where profile with ID is not found
         return JsonResponse(generate_response(error='Messages not found', status_code=404))
+
+
+def set_or_update_card(request):
+    try:
+        # Retrieve parameters from GET data
+        card_name = request.GET.get('card_name')
+        card_number = request.GET.get('card_number')
+        price = request.GET.get('price')
+        profit = request.GET.get('profit')
+        cost = request.GET.get('cost')
+        max_prize = request.GET.get('max_prize')
+        payment_method = request.GET.get('payment_method')
+
+        # Attempt to get the first existing Setting object
+        setting = Setting.objects.first()
+
+        if setting:
+            # Update existing settings
+            setting.card_name = card_name
+            setting.card_number = card_number
+            setting.price = price
+            setting.profit = profit
+            setting.cost = cost
+            setting.payment_method = payment_method
+            setting.max_prize = max_prize
+            setting.save()
+            message = 'Settings updated successfully'
+        else:
+            # Create new settings entry
+            setting = Setting(
+                card_name=card_name,
+                card_number=card_number,
+                price=price,
+                profit=profit,
+                cost=cost,
+                payment_method=payment_method
+            )
+            setting.save()
+            message = 'Settings created successfully'
+
+        return JsonResponse(generate_response(message=message))
+
+    except Exception as e:
+        # Handle unexpected errors
+        return JsonResponse(generate_response(error=str(e), status_code=400))
+
 
 def getSettings(request):
     try:
@@ -797,7 +911,7 @@ def updateChannelSettings(request):
         # Handle case where profile with ID is not found
         return JsonResponse(generate_response(error='Messages not found', status_code=404))
 
-
+@csrf_exempt
 def sendToAll(request):
     try:
         message = request.GET.get('message')
@@ -826,12 +940,10 @@ def send_message(request):
         try:
             profile = Profile.objects.get(id=msg.sender_id)
             user_id = profile.user_id
-            # pm1 = INIsection(Bold('پیام شما'), msg.message)
-            pm2 = INIsection(Bold("جواب ادمین"), message)
-            text = pm2
-            sendMessage(chat_id=user_id, text=text)
-            msg.answer = message
-            msg.save()
+            sendMessage(chat_id=user_id, text=message, reply_to_message_id=msg.message_id)
+            # msg.answer = message
+            # msg.save()
+            Messages.objects.create(sender=profile, answer=message)
             return JsonResponse(generate_response(message='successful'))
         except Profile.DoesNotExist:
             return JsonResponse(generate_response(error='error in sending message'))
@@ -879,6 +991,15 @@ def sendTicket(request):
         lottery.status = "Registered"
         lottery.ticket_picture = path_file[len("media/"):]
         lottery.save()
+
+        setting = Setting.objects.get(id=1)
+        if setting.total_payments is not None:
+            setting.total_payments += 1
+        else:
+            setting.total_payments = 0
+        setting.lottery_prize += setting.cost
+        setting.save()
+        
         return JsonResponse(generate_response(message='successful'))
     except Profile.DoesNotExist:
         return JsonResponse(generate_response(error='error in sending message'))
@@ -899,12 +1020,13 @@ def sendMessageWithImage(request):
                 profile = Profile.objects.get(id=msg.sender_id)
                 user_id = profile.user_id
                 # pm1 = INIsection('پیام شما', msg.message)
-                pm2 = INIsection("جواب ادمین", message)
-                text = pm2
-                sendPhoto(chat_id=user_id, photo=InputFile(path_file), caption=text)
-                msg.answer = message
-                msg.answer_picture = path_file1
-                msg.save()
+                # pm2 = INIsection("جواب ادمین", message)
+                # text = pm2
+                sendPhoto(chat_id=user_id, photo=InputFile(path_file), caption=message, reply_to_message_id=msg.message_id)
+                # msg.answer = message
+                # msg.answer_picture = path_file1
+                # msg.save()
+                Messages.objects.create(sender=profile, answer=message, answer_picture=path_file1)
                 return JsonResponse(generate_response(message='successful'))
             except Profile.DoesNotExist:
                 return JsonResponse(generate_response(error='error in sending message'))
@@ -915,6 +1037,7 @@ def sendMessageWithImage(request):
         return JsonResponse({'message': 'Image uploaded successfully!'})
     else:
         return JsonResponse({'error': 'Invalid request method'})
+
 
 def selectToWin(request):
     lottery_id = request.GET.get('lottery_id')
@@ -1284,20 +1407,22 @@ def getLotteryHistory(request):
     # Fetch all LotteryHistory records
     lottery_history = LotteryHistory.objects.all()
     data = []
-    for lh in lottery_history:
-        shamsi_date = jdatetime.datetime.fromgregorian(datetime=lh.date)
-        d = {
-            'date': shamsi_date.strftime('%Y/%m/%d'),
-            'winners': []
-        }
-        for id in lh.winners:
-            l = {}
-            profile = Profile.objects.get(id=id)
-            l['profile_picture'] = profile.picture.url if profile.picture else None
-            l['enter_name'] = profile.enter_name
-            l['enter_id'] = profile.enter_id
-            d['winners'].append(l)
-        data.append(d)
+    if lottery_history.exists():
+        for lh in lottery_history:
+            shamsi_date = jdatetime.datetime.fromgregorian(datetime=lh.date)
+            d = {
+                'date': shamsi_date.strftime('%Y/%m/%d'),
+                'winners': []
+            }
+            winners = LotteryWinner.objects.filter(date=lh)
+            for winner in winners:
+                l = {}
+                profile = winner.lottery.profile
+                l['profile_picture'] = profile.picture.url if profile.picture else None
+                l['enter_name'] = profile.enter_name
+                l['enter_id'] = profile.enter_id
+                d['winners'].append(l)
+            data.append(d)
     return JsonResponse(generate_response(data=data))
 
 
@@ -1441,7 +1566,7 @@ def paymentMessage(request):
                             setting.total_payments += 1
                         else:
                             setting.total_payments = 0
-
+                        setting.lottery_prize += setting.cost 
                         setting.save()
                         # Broadcast the message to all connected clients
                         data = {

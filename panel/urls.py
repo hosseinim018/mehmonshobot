@@ -27,6 +27,7 @@ urlpatterns = [
     path("removeGame", removeGame),
     path("setCard", setCard),
     path("updateCard", updateCard),
+    path("setOrUpdateCard", set_or_update_card),
     path("getSettings", getSettings),
     path("updateChannelSettings", updateChannelSettings),
     path("sendMessage", send_message),

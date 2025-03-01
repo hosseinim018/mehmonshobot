@@ -384,7 +384,7 @@ def lottery_info(message):
     def conver_to_shamsi(date):
         shamsi_date = jdatetime.datetime.fromgregorian(datetime=date)
         time_zone = jdatetime.timedelta(hours=3, minutes=30)
-        # shamsi_date = shamsi_date + time_zone
+        shamsi_date = shamsi_date + time_zone
         return shamsi_date
     shamsi_start_time = conver_to_shamsi(setting.start_time)
     start_time = {
@@ -1003,7 +1003,7 @@ def any(message):
                 try:
                     profile = Profile.objects.get(user_id=message.chat.id)
                     if message.photo == None:
-                        messageObj = Messages.objects.create(sender=profile, message=message.text)
+                        messageObj = Messages.objects.create(sender=profile, message=message.text, message_id = message.message_id)
                         message_text = message.text
                     else:
                         file_id = message.photo[-1].file_id
@@ -1012,7 +1012,8 @@ def any(message):
                         filename = get_filename_with_date(message.chat.id, '.jpg')
                         pic = bot.download_file(filename=filename, dir_path='media/img/uploads/', file_path=file_path)
                         filename = 'img/uploads/' + filename
-                        messageObj = Messages.objects.create(sender=profile, message=message.caption, sender_picture=filename)
+                        message.caption = '\n' if message.caption == None else message.caption
+                        messageObj = Messages.objects.create(sender=profile, message=message.caption, sender_picture=filename, message_id=message.message_id)
                         message_text = message.caption
                     text = 'پیام شما با موفقیت ارسال شد.'
                     message.answer(text)

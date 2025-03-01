@@ -54,21 +54,40 @@ class LotteryHistory(models.Model):
         winners (JSONField): A list of winners for the lottery event.
     """
     date = models.DateTimeField(default=timezone.now, blank=True)
-    winners = models.JSONField(default=list)
 
     def __str__(self):
         """
         Returns a string representation of the LotteryHistory instance,
-        including the date of the lottery and the list of winners.
+        including the date of the lottery.
 
         Returns:
-            str: A formatted string displaying the lottery date and winners.
+            str: A formatted string displaying the lottery date.
         """
-        return f"Lottery on {self.date.strftime('%Y-%m-%d %H:%M:%S')} with winners: {self.winners}"
+        return f"Lottery on {self.date.strftime('%Y-%m-%d %H:%M:%S')}"
+
+
+class LotteryWinner(models.Model):
+    """
+    Model representing a winner in a lottery event.
+
+    Attributes:
+        lottery (ForeignKey): The lottery event associated with the winner.
+        date (ForeignKey): The date of the lottery in LotteryHistory.
+        prize (CharField): The prize won by the winner.
+    """
+    lottery = models.ForeignKey(Lottery, on_delete=models.CASCADE, related_name='winners')
+    date = models.ForeignKey(LotteryHistory, on_delete=models.CASCADE, related_name='lottery_date')
+    prize = models.CharField(max_length=255)
+    prize_status = models.CharField(max_length=20, default="PENDING", choices=(('PENDING', 'Pending'), ('PAID', 'Paid'), ('FAILED', 'Failed')))
+
+    def __str__(self):
+        return f"Winner: {self.lottery.profile.username} - Prize: {self.prize} - Date: {self.date.date.strftime('%Y-%m-%d %H:%M:%S')}"
+
 
 class Messages(models.Model):
   sender = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='sent_messages')
   message = models.TextField(blank=True, null=True)
+  message_id = models.BigIntegerField(blank=True, null=True)
   sender_picture = models.ImageField(upload_to='img/uploads/', blank=True)
   answer = models.TextField(blank=True, null=True)
   answer_picture = models.ImageField(upload_to='img/uploads/', blank=True)
@@ -85,7 +104,11 @@ class Setting(models.Model):
     # payment
     card_name = models.CharField(max_length=100)
     card_number = models.PositiveBigIntegerField(blank=True, null=True)
+    max_prize = models.PositiveIntegerField(blank=True, null=True)
     price = models.PositiveIntegerField(blank=True, null=True)
+    lottery_prize = models.PositiveIntegerField(blank=True, null=True)
+    cost = models.PositiveIntegerField(blank=True, null=True)
+    profit = models.PositiveIntegerField(blank=True, null=True)
     payment_method = models.CharField(max_length=20, choices=(('card-to-card', 'card-to-card'), ('gateway', 'gateway')), default='card-to-card')
 
     # lottery date

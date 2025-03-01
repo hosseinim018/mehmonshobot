@@ -9,16 +9,22 @@ from channels.generic.websocket import AsyncWebsocketConsumer,WebsocketConsumer
 from channels.db import database_sync_to_async
 from django.db.models import QuerySet
 from panel.tasks import sendToAll
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Lottery(AsyncWebsocketConsumer):
     connected_users = set()
 
     async def connect(self):
-        await self.accept()
-        await self.channel_layer.group_add('chat', self.channel_name)
-        self.connected_users.add(self.channel_name)
-        await self.send_user_count()
-
+        try:
+            await self.accept()
+            await self.channel_layer.group_add('chat', self.channel_name)
+            self.connected_users.add(self.channel_name)
+            await self.send_user_count()
+        except ConnectionError as e:
+            logger.error(f"Lottery connection error: {e}")
+            await self.close()
 
     async def sendGroup(self, data=None):
         """
@@ -55,12 +61,14 @@ class Lottery(AsyncWebsocketConsumer):
             'message': json.dumps({'connected_users': user_count}),
         })
 
-
-
 class TotalUnRead(AsyncWebsocketConsumer):
     async def connect(self):
-        await self.accept()
-        await self.channel_layer.group_add('unread', self.channel_name)
+        try:
+            await self.accept()
+            await self.channel_layer.group_add('unread', self.channel_name)
+        except ConnectionError as e:
+            logger.error(f"TotalUnRead connection error: {e}")
+            await self.close()
 
     async def chat_message(self, event):
         # Extract the message from the event
@@ -72,11 +80,14 @@ class TotalUnRead(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard('unread', self.channel_name)
 
-
 class MessagesSocet(AsyncWebsocketConsumer):
     async def connect(self):
-        await self.accept()
-        await self.channel_layer.group_add('supportMessages', self.channel_name)
+        try:
+            await self.accept()
+            await self.channel_layer.group_add('supportMessages', self.channel_name)
+        except ConnectionError as e:
+            logger.error(f"MessagesSocet connection error: {e}")
+            await self.close()
 
     async def chat_message(self, event):
         # Extract the message from the event
@@ -90,8 +101,12 @@ class MessagesSocet(AsyncWebsocketConsumer):
 
 class TotalUnReadMessage(AsyncWebsocketConsumer):
     async def connect(self):
-        await self.accept()
-        await self.channel_layer.group_add('unreadmessage', self.channel_name)
+        try:
+            await self.accept()
+            await self.channel_layer.group_add('unreadmessage', self.channel_name)
+        except ConnectionError as e:
+            logger.error(f"TotalUnReadMessage connection error: {e}")
+            await self.close()
 
     async def chat_message(self, event):
         # Extract the message from the event
