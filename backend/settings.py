@@ -54,6 +54,11 @@ DEBUG = True
 
 # ALLOWED_HOSTS = []
 ALLOWED_HOSTS = ["mybotadmin.site", "mehmoonshobot.runflare.run", "127.0.0.1", "localhost"]
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://mybotadmin.site',
+]
+
 DOMAIN = "mybotadmin.site"
 # Application definition
 
@@ -256,6 +261,7 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 SANDBOX = True
 MERCHANT = 'e6a82528-4314-411a-bbc5-a6b63a2ba105'
 PAYMENT_CALLBACK_URL = f'https://{ALLOWED_HOSTS[0]}/paymentMessage/'
+# PAYMENT_CALLBACK_URL = f'http://127.0.0.1:8000/paymentMessage/'
 
 # import sys
 # sys.stdout.reconfigure(encoding='utf-8')
