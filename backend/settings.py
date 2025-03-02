@@ -55,9 +55,9 @@ DEBUG = True
 # ALLOWED_HOSTS = []
 ALLOWED_HOSTS = ["mybotadmin.site", "mehmoonshobot.runflare.run", "127.0.0.1", "localhost"]
 
-# CSRF_TRUSTED_ORIGINS = [
-#     'https://mybotadmin.site',
-# ]
+CSRF_TRUSTED_ORIGINS = [
+    'https://mybotadmin.site',
+]
 
 DOMAIN = "mybotadmin.site"
 # Application definition
@@ -120,10 +120,10 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'psqlpph_db',
+        'NAME': 'mainvvr_db',
         'USER': 'postgres',
-        'PASSWORD': 'dH5xUm24CjngGqpPIkSu',
-        'HOST': 'psql-ump-service',
+        'PASSWORD': 'uWC5nkxDcdJHSmG5f8cz',
+        'HOST': 'main-pdv-service',
         'PORT': '5432',
     }
 }
@@ -220,7 +220,7 @@ LOGGING = {
 ASGI_APPLICATION = "backend.asgi.application"
 
 # CHANNEL_LAYERS_HOST = "redis://127.0.0.1:6379"
-CHANNEL_LAYERS_HOST = "redis://default:yKWO8vUFhPP2ujwmn2yz@redis2-wsc-service:6379"
+CHANNEL_LAYERS_HOST = "redis://default:ud6PEzgZPn9Yf7NdxAss@myredis-ffe-service:6379"
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -230,7 +230,7 @@ CHANNEL_LAYERS = {
     },
 }
 # Celery settings
-REDIS_BASE_URL = "redis://default:yKWO8vUFhPP2ujwmn2yz@redis2-wsc-service:6379"
+REDIS_BASE_URL = "redis://default:ud6PEzgZPn9Yf7NdxAss@myredis-ffe-service:6379"
 # REDIS_BASE_URL = "redis://default:ud6PEzgZPn9Yf7NdxAss@remote.runflare.com:32516"
 # REDIS_BASE_URL = "redis://127.0.0.1:6379"
 CELERY_BROKER_URL = f"{REDIS_BASE_URL}/0"
