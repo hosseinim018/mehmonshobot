@@ -116,17 +116,24 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
-
+import dj_database_url
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgresyoe_db',
-        'USER': 'postgres',
-        'PASSWORD': 'yNQJovn1pClV7xUOhw2k',
-        'HOST': 'postgres-cme-service',
-        'PORT': '5432',
-    }
+    'default': dj_database_url.config(
+        default='postgresql://postgres:yNQJovn1pClV7xUOhw2k@postgres-cme-service:5432/postgresyoe_db',
+        conn_max_age=600,
+        # ssl_require=True
+    )
 }
+# DATABASES = {
+    # 'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'postgresyoe_db',
+#         'USER': 'postgres',
+#         'PASSWORD': 'yNQJovn1pClV7xUOhw2k',
+#         'HOST': 'postgres-cme-service',
+#         'PORT': '5432',
+#     }
+# }
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
@@ -220,7 +227,7 @@ LOGGING = {
 ASGI_APPLICATION = "backend.asgi.application"
 
 # CHANNEL_LAYERS_HOST = "redis://127.0.0.1:6379"
-CHANNEL_LAYERS_HOST = "redis://default:vlY7jQ4zV8KarEonNFwf@redis-sll-service:6379"
+CHANNEL_LAYERS_HOST = "redis://default:vlY7jQ4zV8KarEonNFwf@remote.runflare.com:30740"
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -230,7 +237,7 @@ CHANNEL_LAYERS = {
     },
 }
 # Celery settings
-REDIS_BASE_URL = "redis://default:vlY7jQ4zV8KarEonNFwf@redis-sll-service:6379"
+REDIS_BASE_URL = "redis://default:vlY7jQ4zV8KarEonNFwf@remote.runflare.com:30740"
 # REDIS_BASE_URL = "redis://default:ud6PEzgZPn9Yf7NdxAss@remote.runflare.com:32516"
 # REDIS_BASE_URL = "redis://127.0.0.1:6379"
 CELERY_BROKER_URL = f"{REDIS_BASE_URL}/0"
@@ -268,9 +275,9 @@ PAYMENT_CALLBACK_URL = f'https://{ALLOWED_HOSTS[0]}/paymentMessage/'
 
 
 # EMAIL:
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # For production use
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # For production use
 # For development, you can use console backend instead:
-# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 EMAIL_HOST = 'smtp-de-01.runflare.com'
 EMAIL_PORT = 587

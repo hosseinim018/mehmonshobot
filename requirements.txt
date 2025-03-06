@@ -13,3 +13,5 @@ daphne
 channels
 psycopg2
 channels_redis
+python-dotenv
+dj-database-url
