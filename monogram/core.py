@@ -10,6 +10,8 @@ from cryptography.fernet import Fernet
 import os
 from monogram.text import format_text
 
+logger = logging.getLogger(__name__)
+
 class Monogram:
     def __new__(cls, token, secret_token, endpoint, api_endpoint, proxy, proxy_url,*args, **kwargs):
         cls.token = token
@@ -74,7 +76,7 @@ class Monogram:
 
         # Set PROXIES to the PROXIES dictionary if PROXY is True, otherwise set it to None
         PROXIES = PROXIES if self.proxy else None
-
+        logger.info(f'method: {method}, data: {data}')
         try:
             # Send the request to monogram based on method
             # in config.py if you set PROXY to True session post with PROXIES that you set in config.py
@@ -88,10 +90,12 @@ class Monogram:
 
             if files:
                 response = self.session.post(url, data=data, files=files)
+                logger.info(f'method: {method}, data: {data}\nresponse: {response}')
                 if res:
                     return response
             else:
                 response = self.session.post(url, json=data)
+                logger.info(f'method: {method}, data: {data}\nresponse: {response}')
                 if res:
                     return response
             # response.raise_for_status()  # Raise an exception for non-2xx status codes

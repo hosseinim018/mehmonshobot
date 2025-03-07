@@ -8,7 +8,9 @@ from monogram.methods import getChatMember
 from monogram.types import ChatMember, InlineKeyboardMarkup, InlineKeyboardButton
 from monogram.extentions.conversation import Conversation
 import re
+import logging
 
+logger = logging.getLogger(__name__)
 
 def is_command(message):
   try:
@@ -92,6 +94,7 @@ def UpdateHandler(request, UPDATE_HANDLER):
         #         # cqf(CallbackQuery(result['callback_query']))
         #         cqf(result['callback_query'])
         # else:
+        logger.info(result)
         update = Update(**result)
         if 'callback_query' in result:
             for cqf in UPDATE_HANDLER['callback_query']:
